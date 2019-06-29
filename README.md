@@ -73,22 +73,16 @@ $ psChecker check -t path/to/config.yml
 
 If you want to write the result to a file:
 ```
-$ webStatusChecker -t path/to/config.yml -o path/to/output/file
+$ psChecker -t path/to/config.yml -o path/to/output/file
 ```
 
 ```
-Usage of webStatusChecker:
-    show:
-    
-    check: 
-        -l int
-                Monitoring time (second). In the case of 0, it is infinite. (default 0)
+Usage of psChecker:
         -n int
                 Parallel number. (default 200)
         -o string
                 output file path. If not set, it will be output to standard output
         -t string
                 path to config.yml (default "In the same directory as the executable file")
-        -v	show verbose
 ```
 
