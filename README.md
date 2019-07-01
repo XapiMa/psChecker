@@ -4,14 +4,14 @@ Check if there are processes with the specified information.
 
 ## Installation
 ```
-$ go get github.com/XapiMa/psChecker
+$ go get github.com/XapiMa/psChecker/cmd/psChecker
 ```
 
 or
 
 ```
 $ git clone https://github.com/XapiMa/psChecker.git
-$ go build main.go
+$ go build ./psChecker/cmd/psChecker
 ```
 
 If you need a different Architecture executable file:
