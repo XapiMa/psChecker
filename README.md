@@ -29,10 +29,14 @@ https://golang.org/doc/install/source#environment
 ```
 $ psChecker show
 
-USER    PID     EXEC_FILE_NAME              ARGS 
-root    4875    /sbin/auditd    
-root    4988    /usr/sbin/NetworkManager    --no-daemon
-root    5448    /usr/sbin/sshd              -D
+- exec: /sbin/auditd
+  cmd: /sbin/auditd 
+  user: root
+  pid: 4875
+- exec: /usr/sbin/NetworkManager
+  cmd: /usr/sbin/NetworkManager    --no-daemon
+  user: root
+  pid: 4988
 ```
 
 
