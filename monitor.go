@@ -54,7 +54,7 @@ func (monitor *Monitor) Monitor() error {
 
 func (monitor *Monitor) psCheck() {
 	fmt.Println("Checking processes infomretions")
-	targets, err := getProcessInfo(execFlag | cmdFlag | userFlag | pidFlag | openFlag)
+	targets, err := getProcessesInfo(execFlag | cmdFlag | userFlag | pidFlag | openFlag)
 	if err != nil {
 		log.Printf("Error: %s\n", errors.Wrap(err, "cause in psCheck"))
 	}

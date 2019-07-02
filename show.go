@@ -27,7 +27,7 @@ func NewShower(typesString string, outputPath string) (*Shower, error) {
 // Show shows prosesses information
 func (shower *Shower) Show() error {
 
-	targets, err := getProcessInfo(shower.types)
+	targets, err := getProcessesInfo(shower.types)
 	if err != nil {
 		return errors.Wrap(err, "cause in Show")
 	}

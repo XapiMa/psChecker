@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/process"
@@ -19,60 +20,103 @@ type Target struct {
 	Pid  int      `yaml:"pid"`
 }
 
-func getProcessInfo(checkTypes int) ([]Target, error) {
+func getProcessesInfo(checkTypes int) ([]Target, error) {
 	targets := make([]Target, 0)
 	pses, err := process.Processes()
 	if err != nil {
-		return targets, errors.Wrap(err, "getProcessInfo: processes")
+		return targets, errors.Wrap(err, "getProcessesInfo: processes")
+	}
+	wg := &sync.WaitGroup{}
+	ch := make(chan Target, 100)
+	for _, ps := range pses {
+		wg.Add(1)
+		go getProcessInfo(checkTypes, ps, wg, ch)
 	}
 
-	for _, ps := range pses {
-		target := Target{}
-		if checkTypes&execFlag != 0 {
-			exec, err := ps.Exe()
-			// ErrNotImplementedError cant call because it is defined in ithub.com/shirou/gopsutil/internal/common
-			if err != nil && fmt.Sprintf("%s", err) != "not implemented yet" {
-				log.Printf("Error: %s\n", errors.Wrap(err, "cause in getProcessInfo: exec"))
-			} else {
-				target.Exec = exec
-			}
+	go func() {
+		wg.Wait()
+		close(ch)
 
-		}
-		if checkTypes&cmdFlag != 0 {
-			cmd, err := ps.Cmdline()
-			// ErrNotImplementedError cant call because it is defined in ithub.com/shirou/gopsutil/internal/common
-			if err != nil && fmt.Sprintf("%s", err) != "not implemented yet" {
-				log.Printf("Error: %s\n", errors.Wrap(err, "cause in getProcessInfo: cmd"))
-			} else {
-				target.Cmd = cmd
-			}
-		}
-		if checkTypes&openFlag != 0 {
-			files, err := ps.OpenFiles()
-			// ErrNotImplementedError cant call because it is defined in ithub.com/shirou/gopsutil/internal/common
-			if err != nil && fmt.Sprintf("%s", err) != "not implemented yet" {
-				log.Printf("Error: %s\n", errors.Wrap(err, "cause in getProcessInfo: open"))
-			} else if len(files) != 0 {
-				for _, file := range files {
-					target.Open = append(target.Open, file.String())
-				}
-			}
-		}
-		if checkTypes&userFlag != 0 {
-			user, err := ps.Username()
-			// ErrNotImplementedError cant call because it is defined in ithub.com/shirou/gopsutil/internal/common
-			if err != nil && fmt.Sprintf("%s", err) != "not implemented yet" {
-				log.Printf("Error: %s\n", errors.Wrap(err, "cause in getProcessInfo: user"))
-			} else {
-				target.User = user
-			}
-		}
-		if checkTypes&cmdFlag != 0 {
-			target.Pid = int(ps.Pid)
-		}
+	}()
+
+	for target := range ch {
 		targets = append(targets, target)
 	}
+
 	return targets, nil
+}
+
+func getProcessInfo(checkTypes int, ps *process.Process, wgp *sync.WaitGroup, ch chan Target) {
+	defer wgp.Done()
+	target := Target{}
+	wg := &sync.WaitGroup{}
+	if checkTypes&execFlag != 0 {
+		wg.Add(1)
+		go getExe(ps, &target, wg)
+	}
+	if checkTypes&cmdFlag != 0 {
+		wg.Add(1)
+		go getCmd(ps, &target, wg)
+	}
+	if checkTypes&openFlag != 0 {
+		wg.Add(1)
+		go getOpen(ps, &target, wg)
+	}
+	if checkTypes&userFlag != 0 {
+		wg.Add(1)
+		go getUser(ps, &target, wg)
+	}
+	if checkTypes&cmdFlag != 0 {
+		target.Pid = int(ps.Pid)
+	}
+	wg.Wait()
+	ch <- target
+}
+
+func getExe(ps *process.Process, target *Target, wgp *sync.WaitGroup) {
+	defer wgp.Done()
+	exec, err := ps.Exe()
+	// ErrNotImplementedError cant call because it is defined in ithub.com/shirou/gopsutil/internal/common
+	if err != nil && fmt.Sprintf("%s", err) != "not implemented yet" {
+		log.Printf("Error: %s\n", errors.Wrap(err, "cause in getProcessInfo: exec"))
+	} else {
+		target.Exec = exec
+	}
+}
+
+func getCmd(ps *process.Process, target *Target, wgp *sync.WaitGroup) {
+	defer wgp.Done()
+	cmd, err := ps.Cmdline()
+	// ErrNotImplementedError cant call because it is defined in ithub.com/shirou/gopsutil/internal/common
+	if err != nil && fmt.Sprintf("%s", err) != "not implemented yet" {
+		log.Printf("Error: %s\n", errors.Wrap(err, "cause in getProcessInfo: cmd"))
+	} else {
+		target.Cmd = cmd
+	}
+}
+
+func getOpen(ps *process.Process, target *Target, wgp *sync.WaitGroup) {
+	defer wgp.Done()
+	files, err := ps.OpenFiles()
+	// ErrNotImplementedError cant call because it is defined in ithub.com/shirou/gopsutil/internal/common
+	if err != nil && fmt.Sprintf("%s", err) != "not implemented yet" {
+		log.Printf("Error: %s\n", errors.Wrap(err, "cause in getProcessInfo: open"))
+	} else if len(files) != 0 {
+		for _, file := range files {
+			target.Open = append(target.Open, file.String())
+		}
+	}
+}
+
+func getUser(ps *process.Process, target *Target, wgp *sync.WaitGroup) {
+	defer wgp.Done()
+	user, err := ps.Username()
+	// ErrNotImplementedError cant call because it is defined in ithub.com/shirou/gopsutil/internal/common
+	if err != nil && fmt.Sprintf("%s", err) != "not implemented yet" {
+		log.Printf("Error: %s\n", errors.Wrap(err, "cause in getProcessInfo: user"))
+	} else {
+		target.User = user
+	}
 }
 
 func clearFile(path string) error {
