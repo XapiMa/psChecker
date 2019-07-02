@@ -44,18 +44,15 @@ Write whitelist and blacklist in follow format:
 - user: root
   pid: 4875
   exec: /sbin/auditd
-  args: ""
 - exec: /usr/sbin/NetworkManager
-  args: --no-daemon
-- pid: 5448
-  exec: /usr/sbin/sshd
-  args: -D
+- cmd: /System/Library/CoreServices/appleeventsd --server
+  user: _appleevents
 ```
 
 - blacklist.yaml
 ```
-- regexp: .*backdoor.*
-- regexp: .*crack.*
+- exec: /usr/sbin/badScript
+- cmd : ./badObject
 ```
 
 Warn when there is no process with the value set to alive and when there is a process with the value set to dead.
@@ -82,4 +79,4 @@ Possible values are user, pid, exec, args and regexp.
 $ sudo psChecker monitor -w path/to/whitelist.yml -b path/to/blacklist.yml
 ```
 
-If you want to see details such as errors for both `psChecker show` and `psChecker monitor`, give -v option
+If you want to see details such as errors for both `psChecker show` and `psChecker monitor`, give -v option.
