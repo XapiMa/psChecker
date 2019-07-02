@@ -47,12 +47,14 @@ Write whitelist and blacklist in follow format:
 - exec: /usr/sbin/NetworkManager
 - cmd: /System/Library/CoreServices/appleeventsd --server
   user: _appleevents
+  regexp: .*server$
 ```
 
 - blacklist.yaml
 ```
 - exec: /usr/sbin/badScript
 - cmd : ./badObject
+- regexp: .*crack.*
 ```
 
 Warn when there is no process with the value set to alive and when there is a process with the value set to dead.
@@ -61,8 +63,8 @@ Possible values are user, pid, exec, args and regexp.
 - user: Execution user name
 - pid: Process ID
 - exec: executable file path
-- args: command line arguments at runtime
-- regexp: regular expression to search for all user, id, exec, args
+- cmd: runtime command line string
+- regexp: regular expression to search for all user, exec, cmd
 
 
 ## Execution

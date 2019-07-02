@@ -3,6 +3,7 @@ package pschecker
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"sort"
 	"sync"
 	"time"
@@ -16,6 +17,7 @@ type Monitor struct {
 	whitelist  []Target
 	blacklist  []Target
 	interval   int
+	regexp     map[string]*regexp.Regexp
 }
 
 // NewMonitor create new monitor object
@@ -29,12 +31,32 @@ func NewMonitor(whitelistPath, blacklistPath, outputPath string, interval int) (
 	for _, target := range m.whitelist {
 		sort.Slice(target.Open, func(i, j int) bool { return target.Open[i] < target.Open[j] })
 	}
+	m.regexp = make(map[string]*regexp.Regexp)
+	for i, target := range m.whitelist {
+		if _, ok := m.regexp[target.Regexp]; !ok {
+			r, err := regexp.Compile(target.Regexp)
+			if err != nil {
+				return m, errors.Wrap(err, fmt.Sprintf("in whitelist %dth item's regexp string %q can't compile", i+1, target.Regexp))
+			}
+			m.regexp[target.Regexp] = r
+		}
+
+	}
 	m.blacklist, err = parseConfigYml(blacklistPath)
 	if err != nil {
 		return m, errors.Wrap(err, "cause in NewMonitor: for blacklist")
 	}
 	for _, target := range m.blacklist {
 		sort.Slice(target.Open, func(i, j int) bool { return target.Open[i] < target.Open[j] })
+	}
+	for i, target := range m.blacklist {
+		if _, ok := m.regexp[target.Regexp]; !ok {
+			r, err := regexp.Compile(target.Regexp)
+			if err != nil {
+				return m, errors.Wrap(err, fmt.Sprintf("in blacklist %dth item's regexp string %q can't compile", i+1, target.Regexp))
+			}
+			m.regexp[target.Regexp] = r
+		}
 	}
 	m.interval = interval
 	m.outputPath = outputPath
@@ -74,7 +96,7 @@ func (monitor *Monitor) checkWhite(targets []Target, wg *sync.WaitGroup) {
 	timeString := time.Now().Format("2006/01/02 15:04:05")
 
 	for _, white := range monitor.whitelist {
-		found := monitor.isExistPs(white, targets)
+		found := monitor.isWhite(white, targets)
 		if !found {
 			outputTxt := fmt.Sprintf("%s NotFound: %v\n", timeString, white)
 			if err := appendFile(monitor.outputPath, outputTxt); err != nil {
@@ -89,7 +111,7 @@ func (monitor *Monitor) checkBlack(targets []Target, wg *sync.WaitGroup) {
 	timeString := time.Now().Format("2006/01/02 15:04:05")
 
 	for _, target := range targets {
-		found := monitor.isExistPsBlack(target, monitor.blacklist)
+		found := monitor.isBlack(target, monitor.blacklist)
 		if found {
 			outputTxt := fmt.Sprintf("%s WARNING!! FOUND!!: %v\n", timeString, target)
 			if err := appendFile(monitor.outputPath, outputTxt); err != nil {
@@ -99,26 +121,60 @@ func (monitor *Monitor) checkBlack(targets []Target, wg *sync.WaitGroup) {
 	}
 }
 
-func (monitor *Monitor) isExistPs(item Target, targets []Target) bool {
+func (monitor *Monitor) isWhite(white Target, targets []Target) bool {
 	found := false
 	for _, target := range targets {
 		found = true
-		if item.Exec != "" && item.Exec != target.Exec {
+		if white.Exec != "" && white.Exec != target.Exec {
 			found = false
 		}
-		if item.Cmd != "" && item.Cmd != target.Cmd {
+		if white.Cmd != "" && white.Cmd != target.Cmd {
 			found = false
 		}
-		if len(item.Open) != 0 {
-			if fmt.Sprintf("%v", item.Open) != fmt.Sprintf("%v", target.Open) {
+		if len(white.Open) != 0 {
+			if fmt.Sprintf("%v", white.Open) != fmt.Sprintf("%v", target.Open) {
 				found = false
 			}
 		}
-		if item.User != "" && item.User != target.User {
+		if white.User != "" && white.User != target.User {
 			found = false
 		}
-		if item.Pid != 0 && item.Pid != target.Pid {
+		if white.Pid != 0 && white.Pid != target.Pid {
 			found = false
+		}
+		if white.Regexp != "" {
+			reFlag := false
+			for x := 0; x < 1; x++ {
+				if ok, err := monitor.matchPattern(target.Exec, white.Regexp); err != nil {
+					log.Print(errors.Wrap(err, "couse in isWhite"))
+				} else if ok {
+					reFlag = true
+					break
+				}
+				if ok, err := monitor.matchPattern(target.Cmd, white.Regexp); err != nil {
+					log.Print(errors.Wrap(err, "couse in isWhite"))
+				} else if ok {
+					reFlag = true
+					break
+				}
+				if ok, err := monitor.matchPattern(target.User, white.Regexp); err != nil {
+					log.Print(errors.Wrap(err, "couse in isWhite"))
+				} else if ok {
+					reFlag = true
+					break
+				}
+				for _, open := range target.Open {
+					if ok, err := monitor.matchPattern(open, white.Regexp); err != nil {
+						log.Print(errors.Wrap(err, "couse in isWhite"))
+					} else if ok {
+						reFlag = true
+						break
+					}
+				}
+			}
+			if !reFlag {
+				found = false
+			}
 		}
 		if found {
 			break
@@ -127,30 +183,76 @@ func (monitor *Monitor) isExistPs(item Target, targets []Target) bool {
 	return found
 }
 
-func (monitor *Monitor) isExistPsBlack(item Target, targets []Target) bool {
+func (monitor *Monitor) isBlack(target Target, blacks []Target) bool {
 	found := false
-	for _, target := range targets {
+	for _, black := range blacks {
 		found = true
-		if target.Exec != "" && item.Exec != target.Exec {
+		if black.Exec != "" && target.Exec != black.Exec {
 			found = false
 		}
-		if target.Cmd != "" && item.Cmd != target.Cmd {
+		if black.Cmd != "" && target.Cmd != black.Cmd {
 			found = false
 		}
-		if len(item.Open) != 0 {
-			if fmt.Sprintf("%v", item.Open) != fmt.Sprintf("%v", target.Open) {
+		if len(black.Open) != 0 {
+			if fmt.Sprintf("%v", target.Open) != fmt.Sprintf("%v", black.Open) {
 				found = false
 			}
 		}
-		if target.User != "" && item.User != target.User {
+		if black.User != "" && target.User != black.User {
 			found = false
 		}
-		if target.Pid != 0 && item.Pid != target.Pid {
+		if black.Pid != 0 && target.Pid != black.Pid {
 			found = false
+		}
+		if black.Regexp != "" {
+			reFlag := false
+			for x := 0; x < 1; x++ {
+				if ok, err := monitor.matchPattern(target.Exec, black.Regexp); err != nil {
+					log.Print(errors.Wrap(err, "couse in isBlack"))
+				} else if ok {
+					reFlag = true
+					break
+				}
+				if ok, err := monitor.matchPattern(target.Cmd, black.Regexp); err != nil {
+					log.Print(errors.Wrap(err, "couse in isBlack"))
+				} else if ok {
+					reFlag = true
+					break
+				}
+				if ok, err := monitor.matchPattern(target.User, black.Regexp); err != nil {
+					log.Print(errors.Wrap(err, "couse in isBlack"))
+				} else if ok {
+					reFlag = true
+					break
+				}
+				for _, open := range target.Open {
+					if ok, err := monitor.matchPattern(open, black.Regexp); err != nil {
+						log.Print(errors.Wrap(err, "couse in isBlack"))
+					} else if ok {
+						reFlag = true
+						break
+					}
+				}
+			}
+			if !reFlag {
+				found = false
+			}
 		}
 		if found {
 			break
 		}
 	}
 	return found
+}
+
+func (monitor *Monitor) matchPattern(str, pattern string) (bool, error) {
+	re, ok := monitor.regexp[pattern]
+	if !ok {
+		return false, fmt.Errorf("not found: regexp of %s", pattern)
+	}
+	return matchPattern(str, re), nil
+}
+
+func matchPattern(str string, r *regexp.Regexp) bool {
+	return r.Match([]byte(str))
 }

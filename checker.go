@@ -12,12 +12,14 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// Target is item struct of whitelist and blacklist
 type Target struct {
-	Exec string   `yaml:"exec"`
-	Cmd  string   `yaml:"cmd"`
-	Open []string `yaml:"open"`
-	User string   `yaml:"user"`
-	Pid  int      `yaml:"pid"`
+	Exec   string   `yaml:"exec"`
+	Cmd    string   `yaml:"cmd"`
+	Open   []string `yaml:"open"`
+	User   string   `yaml:"user"`
+	Pid    int      `yaml:"pid"`
+	Regexp string   `yaml:"regexp"`
 }
 
 func getProcessesInfo(checkTypes int) ([]Target, error) {
