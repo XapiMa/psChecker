@@ -58,6 +58,9 @@ func (monitor *Monitor) psCheck() {
 	if err != nil {
 		log.Printf("Error: %s\n", errors.Wrap(err, "cause in psCheck"))
 	}
+	for _, target := range targets {
+		sort.Slice(target.Open, func(i, j int) bool { return target.Open[i] < target.Open[j] })
+	}
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	go monitor.checkWhite(targets, wg)
@@ -70,45 +73,84 @@ func (monitor *Monitor) checkWhite(targets []Target, wg *sync.WaitGroup) {
 	defer wg.Done()
 	timeString := time.Now().Format("2006/01/02 15:04:05")
 
-	for _, target := range targets {
-		sort.Slice(target.Open, func(i, j int) bool { return target.Open[i] < target.Open[j] })
-	}
 	for _, white := range monitor.whitelist {
-		found := false
-		for _, target := range targets {
-			found = true
-			if white.Exec != "" && white.Exec != target.Exec {
-				found = false
+		found := monitor.isExistPs(white, targets)
+		if !found {
+			outputTxt := fmt.Sprintf("%s NotFound: %v\n", timeString, white)
+			if err := appendFile(monitor.outputPath, outputTxt); err != nil {
+				log.Print(errors.Wrap(err, "couse in checkWhite"))
 			}
-			if white.Cmd != "" && white.Cmd != target.Cmd {
-				found = false
-			}
-			if len(white.Open) != 0 {
-				if fmt.Sprintf("%v", white.Open) != fmt.Sprintf("%v", target.Open) {
-					found = false
-				}
-			}
-			if white.User != "" && white.User != target.User {
-				found = false
-			}
-			if white.Pid != 0 && white.Pid != target.Pid {
-				found = false
-			}
-			if found {
-				break
-			}
-		}
-		if found {
-			continue
-		}
-		outputTxt := fmt.Sprintf("%s NotFound: %v\n", timeString, white)
-		if err := appendFile(monitor.outputPath, outputTxt); err != nil {
-			log.Print(errors.Wrap(err, "couse in psChecker"))
 		}
 	}
 }
 
-func (monitor *Monitor) checkBlack(target []Target, wg *sync.WaitGroup) {
+func (monitor *Monitor) checkBlack(targets []Target, wg *sync.WaitGroup) {
 	defer wg.Done()
+	timeString := time.Now().Format("2006/01/02 15:04:05")
 
+	for _, target := range targets {
+		found := monitor.isExistPsBlack(target, monitor.blacklist)
+		if found {
+			outputTxt := fmt.Sprintf("%s WARNING!! FOUND!!: %v\n", timeString, target)
+			if err := appendFile(monitor.outputPath, outputTxt); err != nil {
+				log.Print(errors.Wrap(err, "couse in checkBlack"))
+			}
+		}
+	}
+}
+
+func (monitor *Monitor) isExistPs(item Target, targets []Target) bool {
+	found := false
+	for _, target := range targets {
+		found = true
+		if item.Exec != "" && item.Exec != target.Exec {
+			found = false
+		}
+		if item.Cmd != "" && item.Cmd != target.Cmd {
+			found = false
+		}
+		if len(item.Open) != 0 {
+			if fmt.Sprintf("%v", item.Open) != fmt.Sprintf("%v", target.Open) {
+				found = false
+			}
+		}
+		if item.User != "" && item.User != target.User {
+			found = false
+		}
+		if item.Pid != 0 && item.Pid != target.Pid {
+			found = false
+		}
+		if found {
+			break
+		}
+	}
+	return found
+}
+
+func (monitor *Monitor) isExistPsBlack(item Target, targets []Target) bool {
+	found := false
+	for _, target := range targets {
+		found = true
+		if target.Exec != "" && item.Exec != target.Exec {
+			found = false
+		}
+		if target.Cmd != "" && item.Cmd != target.Cmd {
+			found = false
+		}
+		if len(item.Open) != 0 {
+			if fmt.Sprintf("%v", item.Open) != fmt.Sprintf("%v", target.Open) {
+				found = false
+			}
+		}
+		if target.User != "" && item.User != target.User {
+			found = false
+		}
+		if target.Pid != 0 && item.Pid != target.Pid {
+			found = false
+		}
+		if found {
+			break
+		}
+	}
+	return found
 }
