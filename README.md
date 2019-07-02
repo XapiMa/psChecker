@@ -82,4 +82,4 @@ Possible values are user, pid, exec, args and regexp.
 $ sudo psChecker monitor -w path/to/whitelist.yml -b path/to/blacklist.yml
 ```
 
-
+If you want to see details such as errors for both `psChecker show` and `psChecker monitor`, give -v option
