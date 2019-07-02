@@ -14,22 +14,20 @@ type ShowCommand struct{}
 
 // Run showing the current process list
 func (c *ShowCommand) Run(args []string) int {
-	var targetTypesString string
-	var outputPath string
 	flags := flag.NewFlagSet("show", flag.ExitOnError)
 	flags.Usage = func() { fmt.Fprintf(os.Stderr, "%s\n", c.Help()) }
-	flags.StringVar(&targetTypesString, "t", "exec|cmd|open|user|pid", "Display items separated by '|'")
-	flags.StringVar(&outputPath, "o", "", "path/to/output. default stdout")
+	targetTypesString := flags.String("t", "exec|cmd|open|user|pid", "Display items separated by '|'")
+	outputPath := flags.String("o", "", "path/to/output. default stdout")
 	if err := flags.Parse(args); err != nil {
 		fmt.Println(err)
 		return 1
 	}
-	checker, err := pschecker.NewChecker(targetTypesString, outputPath)
+	shower, err := pschecker.NewShower(*targetTypesString, *outputPath)
 	if err != nil {
 		fmt.Println(err)
 		return 1
 	}
-	if err := checker.Show(); err != nil {
+	if err := shower.Show(); err != nil {
 		fmt.Println(err)
 		return 1
 	}
@@ -56,6 +54,7 @@ func (c *MonitorCommand) Run(args []string) int {
 	flags.Usage = func() { fmt.Fprintf(os.Stderr, "%s\n", c.Help()) }
 	whitelistPath := flags.String("w", "", "path/to/whitelist.yml")
 	blacklistPath := flags.String("b", "", "path/to/blacklist.yml")
+	outputPath := flags.String("o", "", "path/to/output. default stdout")
 
 	if err := flags.Parse(args); err != nil {
 		fmt.Println(err)
@@ -64,6 +63,15 @@ func (c *MonitorCommand) Run(args []string) int {
 
 	if *whitelistPath == "" || *blacklistPath == "" {
 		flags.Usage()
+		return 1
+	}
+	monitor, err := pschecker.NewMonitor(*whitelistPath, *blacklistPath, *outputPath)
+	if err != nil {
+		fmt.Println(err)
+		return 1
+	}
+	if err := monitor.Monitor(); err != nil {
+		fmt.Println(err)
 		return 1
 	}
 

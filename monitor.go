@@ -1,45 +1,32 @@
 package pschecker
 
 import (
-	"fmt"
-	"io/ioutil"
-
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 )
 
-type Target struct {
-	Exec string   `yaml:"exec"`
-	Cmd  string   `yaml:"cmd"`
-	Open []string `yaml:"open"`
-	User string   `yaml:"user"`
-	Pid  int      `yaml:"pid"`
+type Monitor struct {
+	outputPath string
+	whitelist  []Target
+	blacklist  []Target
 }
 
-func (checker *Checker) Monitor(configPath string) error {
-	conf, err := parseConfigYml(configPath)
+func NewMonitor(whitelistPath, blacklistPath, outputPath string) (*Monitor, error) {
+	m := new(Monitor)
+	var err error
+	m.whitelist, err = parseConfigYml(whitelistPath)
 	if err != nil {
-		return errors.Wrap(err, "cause in Monitor")
+		return m, errors.Wrap(err, "cause in NewMonitor: for whitelist")
 	}
-	fmt.Println(conf)
+	m.blacklist, err = parseConfigYml(blacklistPath)
+	if err != nil {
+		return m, errors.Wrap(err, "cause in NewMonitor: for blacklist")
+	}
+
+	m.outputPath = outputPath
+	return m, nil
+}
+
+func (monitor *Monitor) Monitor() error {
 
 	return nil
-}
-
-func parseConfigYml(configPath string) ([]Target, error) {
-	targets := make([]Target, 10000)
-	errorWrap := func(err error) error {
-		return errors.Wrap(err, "cause in parseConfigYml")
-	}
-
-	buf, err := ioutil.ReadFile(configPath)
-	if err != nil {
-		return targets, errorWrap(err)
-	}
-	if err := yaml.Unmarshal(buf, &targets); err != nil {
-		return targets, errorWrap(err)
-	}
-
-	return targets, nil
-
 }
