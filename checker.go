@@ -3,6 +3,7 @@ package pschecker
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 
 	"github.com/pkg/errors"
@@ -31,7 +32,7 @@ func getProcessInfo(checkTypes int) ([]Target, error) {
 			exec, err := ps.Exe()
 			// ErrNotImplementedError cant call because it is defined in ithub.com/shirou/gopsutil/internal/common
 			if err != nil && fmt.Sprintf("%s", err) != "not implemented yet" {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", errors.Wrap(err, "cause in getProcessInfo: exec"))
+				log.Printf("Error: %s\n", errors.Wrap(err, "cause in getProcessInfo: exec"))
 			} else {
 				target.Exec = exec
 			}
@@ -41,7 +42,7 @@ func getProcessInfo(checkTypes int) ([]Target, error) {
 			cmd, err := ps.Cmdline()
 			// ErrNotImplementedError cant call because it is defined in ithub.com/shirou/gopsutil/internal/common
 			if err != nil && fmt.Sprintf("%s", err) != "not implemented yet" {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", errors.Wrap(err, "cause in getProcessInfo: cmd"))
+				log.Printf("Error: %s\n", errors.Wrap(err, "cause in getProcessInfo: cmd"))
 			} else {
 				target.Cmd = cmd
 			}
@@ -50,7 +51,7 @@ func getProcessInfo(checkTypes int) ([]Target, error) {
 			files, err := ps.OpenFiles()
 			// ErrNotImplementedError cant call because it is defined in ithub.com/shirou/gopsutil/internal/common
 			if err != nil && fmt.Sprintf("%s", err) != "not implemented yet" {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", errors.Wrap(err, "cause in getProcessInfo: open"))
+				log.Printf("Error: %s\n", errors.Wrap(err, "cause in getProcessInfo: open"))
 			} else if len(files) != 0 {
 				for _, file := range files {
 					target.Open = append(target.Open, file.String())
@@ -61,7 +62,7 @@ func getProcessInfo(checkTypes int) ([]Target, error) {
 			user, err := ps.Username()
 			// ErrNotImplementedError cant call because it is defined in ithub.com/shirou/gopsutil/internal/common
 			if err != nil && fmt.Sprintf("%s", err) != "not implemented yet" {
-				fmt.Fprintf(os.Stderr, "Error: %s\n", errors.Wrap(err, "cause in getProcessInfo: user"))
+				log.Printf("Error: %s\n", errors.Wrap(err, "cause in getProcessInfo: user"))
 			} else {
 				target.User = user
 			}

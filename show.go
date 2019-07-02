@@ -6,11 +6,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Shower is struct for show command
 type Shower struct {
 	types      int
 	outputPath string
 }
 
+// NewShower create new shower object
 func NewShower(typesString string, outputPath string) (*Shower, error) {
 	s := new(Shower)
 	var err error
@@ -22,6 +24,7 @@ func NewShower(typesString string, outputPath string) (*Shower, error) {
 	return s, nil
 }
 
+// Show shows prosesses information
 func (shower *Shower) Show() error {
 
 	targets, err := getProcessInfo(shower.types)
