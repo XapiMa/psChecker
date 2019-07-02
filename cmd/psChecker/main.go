@@ -24,12 +24,12 @@ func (c *ShowCommand) Run(args []string) int {
 		fmt.Println(err)
 		return 1
 	}
-	monitor, err := pschecker.NewMonitor(targetTypesString, outputPath)
+	checker, err := pschecker.NewChecker(targetTypesString, outputPath)
 	if err != nil {
 		fmt.Println(err)
 		return 1
 	}
-	if err := monitor.Show(); err != nil {
+	if err := checker.Show(); err != nil {
 		fmt.Println(err)
 		return 1
 	}

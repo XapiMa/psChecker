@@ -45,19 +45,6 @@ func appendFile(outputPath, outputString string) error {
 	}
 	return nil
 }
-func writeNewFile(outputPath, outputString string) error {
-	if outputPath == "" {
-		fmt.Printf("%s", outputString)
-	} else {
-		file, err := os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE, 0644)
-		if err != nil {
-			return err
-		}
-		file.Write(([]byte)(outputString))
-		file.Close()
-	}
-	return nil
-}
 
 func ymlUnmarshal(fileBuffer []byte) ([]map[interface{}]interface{}, error) {
 	errorWrap := func(err error) error {
