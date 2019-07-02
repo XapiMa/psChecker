@@ -36,23 +36,26 @@ root    5448    /usr/sbin/sshd              -D
 ```
 
 
-### Write config.yml
-Write the process information of health check target in config.yml
+### Write whitelist and blacklist
+Write whitelist and blacklist in follow format:
 
+- whitelist.yml
 ```
-alive:
-  - user: root
-    pid: 4875
-    exec: /sbin/auditd
-    args: ""
-  - exec: /usr/sbin/NetworkManager
-    args: --no-daemon
-  - pid: 5448
-    exec: /usr/sbin/sshd
-    args: -D
-dead:
-  - regexp: .*backdoor.*
-  - regexp: .*crack.*
+- user: root
+  pid: 4875
+  exec: /sbin/auditd
+  args: ""
+- exec: /usr/sbin/NetworkManager
+  args: --no-daemon
+- pid: 5448
+  exec: /usr/sbin/sshd
+  args: -D
+```
+
+- blacklist.yaml
+```
+- regexp: .*backdoor.*
+- regexp: .*crack.*
 ```
 
 Warn when there is no process with the value set to alive and when there is a process with the value set to dead.
@@ -67,22 +70,16 @@ Possible values are user, pid, exec, args and regexp.
 
 ## Execution
 
+1. get current process list
 ```
-$ psChecker check -t path/to/config.yml
-```
-
-If you want to write the result to a file:
-```
-$ psChecker -t path/to/config.yml -o path/to/output/file
+# sudo psChecker show -o path/to/output
 ```
 
+2. write whitelist.yml and blacklist.yml
+
+3. monitoring processes
 ```
-Usage of psChecker:
-        -n int
-                Parallel number. (default 200)
-        -o string
-                output file path. If not set, it will be output to standard output
-        -t string
-                path to config.yml (default "In the same directory as the executable file")
+$ sudo psChecker monitor -w path/to/whitelist.yml -b path/to/blacklist.yml
 ```
+
 
