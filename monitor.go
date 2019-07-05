@@ -89,7 +89,6 @@ func (monitor *Monitor) psCheck() {
 		wg.Add(1)
 		go getProcessInfo(checkTypes, ps, wg, ch)
 	}
-
 	go func() {
 		wg.Wait()
 		close(ch)
