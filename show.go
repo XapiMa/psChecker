@@ -1,6 +1,7 @@
 package pschecker
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -22,6 +23,19 @@ func NewShower(typesString string, outputPath string) (*Shower, error) {
 	}
 	s.outputPath = outputPath
 	return s, nil
+}
+
+type OpenFile struct {
+	Path string `json:"path"`
+	Fd   int    `json:"fd"`
+}
+
+func parseOpen(str string) (string, error) {
+	file := OpenFile{}
+	if err := json.Unmarshal([]byte(str), &file); err != nil {
+		return "", err
+	}
+	return file.Path, nil
 }
 
 // Show shows prosesses information
@@ -56,7 +70,13 @@ func (shower *Shower) Show() error {
 			}
 			text += "open: \n"
 			for _, file := range target.Open {
-				text += fmt.Sprintf("    - %s", file)
+				path, err := parseOpen(file)
+				if err != nil {
+					return errors.Wrap(err, "cause in parseOpen")
+				}
+				if path != "" {
+					text += fmt.Sprintf("    - %s\n", path)
+				}
 			}
 		}
 		if target.User != "" {
