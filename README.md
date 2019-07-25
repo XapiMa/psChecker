@@ -63,13 +63,15 @@ Write whitelist and blacklist in follow format:
 
 Warn when there is no process with the value set to alive and when there is a process with the value set to dead.
 
-Possible values are user, pid, exec, args and regexp.
+Possible values are user, pid, exec, cmd, open and regexp.
 - user: Execution user name
 - pid: Process ID
 - exec: executable file path
 - cmd: runtime command line string
+- open: files of opend by pocess
 - regexp: regular expression to search for all user, exec, cmd
 
+But open is not supported on mac.
 
 ## Execution
 
