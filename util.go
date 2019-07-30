@@ -2,6 +2,7 @@ package pschecker
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -56,4 +57,33 @@ func ymlUnmarshal(fileBuffer []byte) ([]map[interface{}]interface{}, error) {
 		return nil, errorWrap(err)
 	}
 	return data, nil
+}
+func clearFile(path string) error {
+	if path == "" {
+		return nil
+	}
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return errors.Wrap(err, "cause in clearFile")
+	}
+	file.Close()
+	return nil
+}
+
+func parseConfigYml(configPath string) ([]Target, error) {
+	targets := make([]Target, 10000)
+	errorWrap := func(err error) error {
+		return errors.Wrap(err, "cause in parseConfigYml")
+	}
+
+	buf, err := ioutil.ReadFile(configPath)
+	if err != nil {
+		return targets, errorWrap(err)
+	}
+	if err := yaml.Unmarshal(buf, &targets); err != nil {
+		return targets, errorWrap(err)
+	}
+
+	return targets, nil
+
 }

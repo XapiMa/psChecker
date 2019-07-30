@@ -2,25 +2,12 @@ package pschecker
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
 	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/process"
-	"gopkg.in/yaml.v2"
 )
-
-// Target is item struct of whitelist and blacklist
-type Target struct {
-	Exec   string   `yaml:"exec"`
-	Cmd    string   `yaml:"cmd"`
-	Open   []string `yaml:"open"`
-	User   string   `yaml:"user"`
-	Pid    int      `yaml:"pid"`
-	Regexp string   `yaml:"regexp"`
-}
 
 func getProcessesInfo(checkTypes int) ([]Target, error) {
 	targets := make([]Target, 0)
@@ -119,34 +106,4 @@ func getUser(ps *process.Process, target *Target, wgp *sync.WaitGroup) {
 	} else {
 		target.User = user
 	}
-}
-
-func clearFile(path string) error {
-	if path == "" {
-		return nil
-	}
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		return errors.Wrap(err, "cause in clearFile")
-	}
-	file.Close()
-	return nil
-}
-
-func parseConfigYml(configPath string) ([]Target, error) {
-	targets := make([]Target, 10000)
-	errorWrap := func(err error) error {
-		return errors.Wrap(err, "cause in parseConfigYml")
-	}
-
-	buf, err := ioutil.ReadFile(configPath)
-	if err != nil {
-		return targets, errorWrap(err)
-	}
-	if err := yaml.Unmarshal(buf, &targets); err != nil {
-		return targets, errorWrap(err)
-	}
-
-	return targets, nil
-
 }
