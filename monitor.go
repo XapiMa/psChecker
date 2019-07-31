@@ -20,7 +20,9 @@ type Monitor struct {
 	interval   int
 	regexp     map[string]*regexp.Regexp
 	watcher    *fsnotify.Watcher
-	cache      map[int]Proc
+	cache      map[int]cacheItem
+	wcc        cacheCount
+	bcc        cacheCount
 }
 
 // Target is item struct of whitelist and blacklist
@@ -63,9 +65,33 @@ func NewMonitor(whitelistPath, blacklistPath, outputPath string, interval int) (
 	}
 	m.interval = interval
 	m.outputPath = outputPath
-	m.cache = make(map[int]Proc)
+	m.cache = make(map[int]cacheItem)
+	m.wcc, err = readListC(whitelistPath)
+	if err != nil {
+		return m, errors.Wrap(err, "in NewMonitor read wcc")
+	}
+	m.bcc, err = readListC(blacklistPath)
+	if err != nil {
+		return m, errors.Wrap(err, "in NewMonitor read bcc")
+	}
+
 	if err := m.initialWatcher(); err != nil {
 		return m, err
+	}
+	return m, nil
+}
+func readListC(path string) (map[*Target]int, error) {
+	m := make(map[*Target]int)
+
+	list, err := parseConfigYml(path)
+	if err != nil {
+		return m, errors.Wrapf(err, "in readListC: for %s", path)
+	}
+	for _, target := range list {
+		sort.Slice(target.Open, func(i, j int) bool { return target.Open[i] < target.Open[j] })
+	}
+	for i := range list {
+		m[&list[i]] = 0
 	}
 	return m, nil
 }
