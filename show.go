@@ -1,6 +1,6 @@
 // +build !linux
 
-package pschecker
+package psmonitor
 
 import (
 	"encoding/json"

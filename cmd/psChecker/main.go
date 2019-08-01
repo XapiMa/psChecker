@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/mitchellh/cli"
-	"github.com/xapima/pschecker"
+	"github.com/xapima/psmonitor"
 )
 
 // ShowCommand show the current process list
@@ -31,7 +31,7 @@ func (c *ShowCommand) Run(args []string) int {
 		log.SetOutput(os.Stderr)
 	}
 
-	shower, err := pschecker.NewShower(*targetTypesString, *outputPath)
+	shower, err := psmonitor.NewShower(*targetTypesString, *outputPath)
 	if err != nil {
 		fmt.Println(err)
 		return 1
@@ -82,7 +82,7 @@ func (c *MonitorCommand) Run(args []string) int {
 		flags.Usage()
 		return 1
 	}
-	monitor, err := pschecker.NewMonitor(*whitelistPath, *blacklistPath, *outputPath, *monitoringSpan)
+	monitor, err := psmonitor.NewMonitor(*whitelistPath, *blacklistPath, *outputPath, *monitoringSpan)
 	if err != nil {
 		fmt.Println(err)
 		return 1
