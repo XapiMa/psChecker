@@ -22,7 +22,6 @@ func (m *Monitor) check() error {
 	if err := m.firstCheck(); err != nil {
 		return errors.Wrap(err, "in check")
 	}
-	fmt.Printf("%v\n", m.cache)
 
 	// for {
 	// 	select {
