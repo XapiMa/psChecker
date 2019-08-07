@@ -2,6 +2,8 @@
 
 package psmonitor
 
+import "errors"
+
 const (
 	execSentence = "exec"
 	cmdSentence  = "cmd"
@@ -13,4 +15,8 @@ const (
 	openFlag
 	userFlag
 	pidFlag
+)
+
+var (
+	ErrNotImplementedError = errors.New("not implemented yet")
 )

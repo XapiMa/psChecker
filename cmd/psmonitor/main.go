@@ -64,7 +64,6 @@ func (c *MonitorCommand) Run(args []string) int {
 	whitelistPath := flags.String("w", "", "path/to/whitelist.yml")
 	blacklistPath := flags.String("b", "", "path/to/blacklist.yml")
 	outputPath := flags.String("o", "", "path/to/output. default stdout")
-	monitoringSpan := flags.Int("i", 60, "Monitoring interval (second)")
 	verbose := flags.Bool("v", false, "show Verbose")
 
 	if !*verbose {
@@ -82,7 +81,7 @@ func (c *MonitorCommand) Run(args []string) int {
 		flags.Usage()
 		return 1
 	}
-	monitor, err := psmonitor.NewMonitor(*whitelistPath, *blacklistPath, *outputPath, *monitoringSpan)
+	monitor, err := psmonitor.NewMonitor(*whitelistPath, *blacklistPath, *outputPath)
 	if err != nil {
 		fmt.Println(err)
 		return 1

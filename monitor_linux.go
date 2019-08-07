@@ -3,6 +3,7 @@ package psmonitor
 import (
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
@@ -12,17 +13,31 @@ import (
 type Monitor struct {
 	wcc        cacheCount
 	bcc        cacheCount
-	cache      map[int]cacheItem
+	cache      cache
 	outputPath string
 	regexp     map[string]*regexp.Regexp
 	watcher    *fsnotify.Watcher
 	message    chan message
 }
-type message interface {
+type message struct {
+	m    MessageType
+	p    Proc
+	t    Target
+	time time.Time
+}
+
+// Target is item struct of whitelist and blacklist
+type Target struct {
+	Exec   string   `yaml:"exec"`
+	Cmd    string   `yaml:"cmd"`
+	Open   []string `yaml:"open"`
+	User   string   `yaml:"user"`
+	Pid    int      `yaml:"pid"`
+	Regexp string   `yaml:"regexp"`
 }
 
 // NewMonitor create new monitor object
-func NewMonitor(whitelistPath, blacklistPath, outputPath string, interval int) (*Monitor, error) {
+func NewMonitor(whitelistPath, blacklistPath, outputPath string) (*Monitor, error) {
 	// ToDo: delete the intervel variable
 
 	var err error
@@ -54,7 +69,9 @@ func NewMonitor(whitelistPath, blacklistPath, outputPath string, interval int) (
 	if err := m.initialWatcher(); err != nil {
 		return m, err
 	}
-	m.messgage = make(chan message, 100)
+
+	m.message = make(chan message, 100)
+
 	return m, nil
 }
 
@@ -68,7 +85,7 @@ func (m *Monitor) addRegexp(cc cacheCount) error {
 			if err != nil {
 				return errors.Wrap(err, fmt.Sprintf("%q can't compile", t.Regexp))
 			}
-			m.regexp[target.Regexp] = r
+			m.regexp[t.Regexp] = r
 		}
 	}
 	return nil
@@ -86,14 +103,11 @@ func (m *Monitor) initialWatcher() error {
 	return nil
 }
 
-// func (monitor *Monitor) matchPattern(str, pattern string) (bool, error) {
-// 	re, ok := monitor.regexp[pattern]
-// 	if !ok {
-// 		return false, fmt.Errorf("not found: regexp of %s", pattern)
-// 	}
-// 	return matchPattern(str, re), nil
-// }
+// Monitor is processes monitoring function
+func (m *Monitor) Monitor() error {
+	return m.monitor()
+}
 
-// func matchPattern(str string, r *regexp.Regexp) bool {
-// 	return r.Match([]byte(str))
-// }
+func (m *Monitor) monitor() error {
+	return m.check()
+}

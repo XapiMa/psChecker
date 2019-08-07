@@ -19,12 +19,11 @@ type Monitor struct {
 	outputPath string
 	whitelist  []Target
 	blacklist  []Target
-	interval   int
 	regexp     map[string]*regexp.Regexp
 }
 
 // NewMonitor create new monitor object
-func NewMonitor(whitelistPath, blacklistPath, outputPath string, interval int) (*Monitor, error) {
+func NewMonitor(whitelistPath, blacklistPath, outputPath string) (*Monitor, error) {
 	m := new(Monitor)
 	var err error
 	m.whitelist, err = parseConfigYml(whitelistPath)
@@ -61,7 +60,6 @@ func NewMonitor(whitelistPath, blacklistPath, outputPath string, interval int) (
 			m.regexp[target.Regexp] = r
 		}
 	}
-	m.interval = interval
 	m.outputPath = outputPath
 	return m, nil
 }
@@ -70,8 +68,7 @@ func NewMonitor(whitelistPath, blacklistPath, outputPath string, interval int) (
 func (monitor *Monitor) Monitor() error {
 
 	for {
-		go monitor.psCheck()
-		time.Sleep(time.Duration(monitor.interval) * time.Second)
+		monitor.psCheck()
 	}
 
 	return nil
